@@ -1,26 +1,37 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import (Column, ForeignKey, Integer, String, Table, DateTime)
+from sqlalchemy import (
+    Column, ForeignKey, Integer, String, Table, DateTime, Boolean
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
 
 
-book_author = Table(
-    "book_author",
-    Base.metadata,
-    Column("book_id", ForeignKey("books.id"), primary_key=True, index=True),
-    Column("author_id", ForeignKey("authors.id"), primary_key=True, index=True),
-)
+# book_reader = Table(
+#     "book_user",
+#     Base.metadata,
+#     Column("book_id", ForeignKey("books.id"), primary_key=True, index=True),
+#     Column("reader_id", ForeignKey("readers.id"), primary_key=True, index=True),
+#     Column("borrow_date", DateTime(timezone=True), default=datetime.now(timezone.utc)),
+#     Column("returned", Boolean, default=False),
+#     Column("return_date", DateTime(timezone=True), nullable=True)
+# ),
 
-book_reader = Table(
-    "book_user",
-    Base.metadata,
-    Column("book_id", ForeignKey("books.id"), primary_key=True, index=True),
-    Column("reader_id", ForeignKey("readers.id"), primary_key=True, index=True),
-    Column("borrow_date", DateTime(timezone=True), default=datetime.now(timezone.utc)),
-    Column("return_date", DateTime(timezone=True), nullable=True)
-),
+class BookReader(Base):
+    __tablename__ = "book_reader"
+    
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), primary_key=True)
+    reader_id: Mapped[int] = mapped_column(ForeignKey("readers.id"), primary_key=True)
+    borrow_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.now(timezone.utc)
+    )
+    returned: Mapped[bool] = mapped_column(Boolean, default=False)
+    return_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    librarian_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    
+    book: Mapped["Book"] = relationship("Book", back_populates="readers", lazy="selectin")
+    reader: Mapped["Reader"] = relationship("Reader", back_populates="books", lazy="selectin")
 
 class User(Base):
     __tablename__ = "users"
@@ -28,7 +39,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    hashed_password: Mapped[str] = mapped_column(String(100), nullable=False)
+    password: Mapped[str] = mapped_column(String(100), nullable=False)
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.now(timezone.utc)
     )
@@ -53,15 +64,16 @@ class Reader(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.now(timezone.utc)
     )
-    books: Mapped[list["Book"]] = relationship("Book", secondary=book_reader, lazy="selectin")
+    books: Mapped[list["BookReader"]] = relationship(
+        "BookReader", 
+        back_populates="reader", 
+        lazy="joined",
+        cascade="all, delete-orphan"
+    )
 
     @property
-    def dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "email": self.email
-        }
+    def not_returned_books(self):
+        return [book for book in self.books if not book.returned]
     
     def __str__(self):
         return f"{self.name} ({self.email})"
@@ -72,11 +84,14 @@ class Book(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     release_year: Mapped[int] = mapped_column(Integer, nullable=True)
-    authors: Mapped[list["Author"]] = relationship(
-        "Author", secondary=book_author, lazy="selectin"
-    )
+    authors: Mapped[str] = mapped_column(String(255), nullable=False)
     isbn: Mapped[str] = mapped_column(String(13), unique=True, nullable=True)
     available_stock: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    readers: Mapped[list["BookReader"]] = relationship(
+        "BookReader", 
+        back_populates="book",
+        lazy="selectin"
+    )
 
     @property
     def dict(self):
@@ -91,13 +106,6 @@ class Book(Base):
     
     def __str__(self):
         return f"{self.title} ({self.release_year})"
-    
-    class Author(Base):
-        __tablename__ = "authors"
 
-        id: Mapped[int] = mapped_column(Integer, primary_key=True)
-        name: Mapped[str] = mapped_column(String(100), nullable=False)
-        date_of_birth: Mapped[datetime.date] = mapped_column(DateTime, nullable=False)
-
-        def __str__(self):
-            return f"{self.name} ({self.date_of_birth})"
+ORM_OBJECT = Reader | Book | User
+ORM_CLS = type[Reader] | type[Book] | type[User]

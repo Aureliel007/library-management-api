@@ -3,6 +3,8 @@ from datetime import timedelta, datetime
 
 import bcrypt
 import jwt
+from typing import Annotated
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
 
@@ -54,3 +56,5 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",
             )
+
+TokenDependency = Annotated[dict, Depends(get_current_user)]
