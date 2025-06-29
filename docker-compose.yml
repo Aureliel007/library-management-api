@@ -1,7 +1,6 @@
-version: '3.9'
 services:
-  postgres_db:
-    image: postgres:17.5-alpine
+  db:
+    image: postgres:16-alpine
     ports:
       - "5432:5432"
     restart: always
@@ -11,6 +10,35 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    env_file:
+      - ./.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  app:
+    build: .
+    restart: always
+    ports: 
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+    volumes:
+      - alembic:/app/alembic
+    env_file:
+      - ./.env
 
 volumes:
   pgdata:
+  alembic:

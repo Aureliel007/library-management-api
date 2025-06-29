@@ -3,7 +3,6 @@ from fastapi.openapi.utils import get_openapi
 
 from app.routers import router
 
-
 app = FastAPI()
 
 app.include_router(router)

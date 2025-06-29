@@ -5,7 +5,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 from .config import settings
 
-PG_DSN=settings.PG_DSN
+PG_DSN=settings.pg_dsn
 
 engine = create_async_engine(PG_DSN)
 Session = async_sessionmaker(

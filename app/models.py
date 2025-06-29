@@ -85,6 +85,7 @@ class Book(Base):
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     release_year: Mapped[int] = mapped_column(Integer, nullable=True)
     authors: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=True)
     isbn: Mapped[str] = mapped_column(String(13), unique=True, nullable=True)
     available_stock: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     readers: Mapped[list["BookReader"]] = relationship(
