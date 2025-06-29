@@ -8,16 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
 
-# book_reader = Table(
-#     "book_user",
-#     Base.metadata,
-#     Column("book_id", ForeignKey("books.id"), primary_key=True, index=True),
-#     Column("reader_id", ForeignKey("readers.id"), primary_key=True, index=True),
-#     Column("borrow_date", DateTime(timezone=True), default=datetime.now(timezone.utc)),
-#     Column("returned", Boolean, default=False),
-#     Column("return_date", DateTime(timezone=True), nullable=True)
-# ),
-
 class BookReader(Base):
     __tablename__ = "book_reader"
     
