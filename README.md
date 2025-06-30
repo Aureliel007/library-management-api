@@ -10,7 +10,7 @@ This project provides a RESTful API for managing a library. It includes function
 
 - **Reader Management** — manage library users (readers).
 
-- **Book Lending System** — issue and return books with business rules.
+- **Book Lending System** — borrow and return books.
 
 - **Auto-generated API Documentation** — available via Swagger UI.
 
